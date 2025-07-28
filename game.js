@@ -1,7 +1,10 @@
 class SouthParkShooterGame {
     constructor(container) {
-        this.width = 480;
-        this.height = 640;
+        // Initial logical size for aspect ratio
+        this.baseWidth = 480;
+        this.baseHeight = 640;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
         this.container = container;
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.width;
@@ -58,17 +61,44 @@ class SouthParkShooterGame {
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
         this.handleCanvasClick = this.handleCanvasClick.bind(this);
+        this.handleResize = this.handleResize.bind(this);
 
         // Event listeners
         this.canvas.addEventListener('keydown', this.handleKeyDown);
         this.canvas.addEventListener('keyup', this.handleKeyUp);
         this.canvas.addEventListener('click', this.handleCanvasClick);
+        window.addEventListener('resize', this.handleResize);
 
         // Focus for keyboard input
         setTimeout(() => this.canvas.focus(), 100);
 
+        // Responsive fullscreen
+        this.handleResize();
+
         // Start rendering immediately
         this.render();
+    }
+
+    handleResize() {
+        // Fill container or viewport, preserve aspect ratio (portrait)
+        let container = this.container;
+        let ww = window.innerWidth;
+        let wh = window.innerHeight;
+        let scale = Math.min(ww / this.baseWidth, wh / this.baseHeight);
+
+        // Calculate new canvas size
+        let newWidth = Math.round(this.baseWidth * scale);
+        let newHeight = Math.round(this.baseHeight * scale);
+
+        this.canvas.style.width = newWidth + "px";
+        this.canvas.style.height = newHeight + "px";
+        this.canvas.width = this.width = this.baseWidth;
+        this.canvas.height = this.height = this.baseHeight;
+
+        // Center canvas in container
+        this.canvas.style.display = "block";
+        this.canvas.style.margin = "auto";
+        this.canvas.style.boxSizing = "border-box";
     }
 
     resetGame() {
@@ -897,42 +927,51 @@ class SouthParkShooterGame {
     }
 
     render = () => {
+        // If canvas was resized by CSS, scale context accordingly
+        const cw = this.canvas.clientWidth;
+        const ch = this.canvas.clientHeight;
+        if (cw !== this.width || ch !== this.height) {
+            this.ctx.setTransform(cw/this.baseWidth, 0, 0, ch/this.baseHeight, 0, 0);
+        } else {
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
         // Background: snowy South Park hills
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.ctx.clearRect(0, 0, this.baseWidth, this.baseHeight);
 
         // Draw sky
-        let grad = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        let grad = this.ctx.createLinearGradient(0, 0, 0, this.baseHeight);
         grad.addColorStop(0, "#82d7ff");
         grad.addColorStop(1, "#f0fff8");
         this.ctx.fillStyle = grad;
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
         // Draw distant snowy mountains
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.moveTo(0, this.height * 0.32);
-        this.ctx.lineTo(90, this.height * 0.17);
-        this.ctx.lineTo(190, this.height * 0.38);
-        this.ctx.lineTo(270, this.height * 0.2);
-        this.ctx.lineTo(370, this.height * 0.35);
-        this.ctx.lineTo(470, this.height * 0.12);
-        this.ctx.lineTo(this.width, this.height * 0.36);
-        this.ctx.lineTo(this.width, 0);
+        this.ctx.moveTo(0, this.baseHeight * 0.32);
+        this.ctx.lineTo(90, this.baseHeight * 0.17);
+        this.ctx.lineTo(190, this.baseHeight * 0.38);
+        this.ctx.lineTo(270, this.baseHeight * 0.2);
+        this.ctx.lineTo(370, this.baseHeight * 0.35);
+        this.ctx.lineTo(470, this.baseHeight * 0.12);
+        this.ctx.lineTo(this.baseWidth, this.baseHeight * 0.36);
+        this.ctx.lineTo(this.baseWidth, 0);
         this.ctx.lineTo(0, 0);
         this.ctx.closePath();
         this.ctx.fillStyle = "#e6f8ff";
         this.ctx.fill();
         // Mountain shadows
         this.ctx.beginPath();
-        this.ctx.moveTo(0, this.height * 0.32);
-        this.ctx.lineTo(90, this.height * 0.17);
-        this.ctx.lineTo(190, this.height * 0.38);
-        this.ctx.lineTo(270, this.height * 0.2);
-        this.ctx.lineTo(370, this.height * 0.35);
-        this.ctx.lineTo(470, this.height * 0.12);
-        this.ctx.lineTo(this.width, this.height * 0.36);
-        this.ctx.lineTo(this.width, this.height * 0.36 + 16);
-        this.ctx.lineTo(0, this.height * 0.32 + 18);
+        this.ctx.moveTo(0, this.baseHeight * 0.32);
+        this.ctx.lineTo(90, this.baseHeight * 0.17);
+        this.ctx.lineTo(190, this.baseHeight * 0.38);
+        this.ctx.lineTo(270, this.baseHeight * 0.2);
+        this.ctx.lineTo(370, this.baseHeight * 0.35);
+        this.ctx.lineTo(470, this.baseHeight * 0.12);
+        this.ctx.lineTo(this.baseWidth, this.baseHeight * 0.36);
+        this.ctx.lineTo(this.baseWidth, this.baseHeight * 0.36 + 16);
+        this.ctx.lineTo(0, this.baseHeight * 0.32 + 18);
         this.ctx.closePath();
         this.ctx.globalAlpha = 0.09;
         this.ctx.fillStyle = "#b8e3fd";
@@ -943,10 +982,10 @@ class SouthParkShooterGame {
         // Draw snowy ground
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.moveTo(0, this.height * 0.38);
-        this.ctx.bezierCurveTo(this.width * 0.25, this.height * 0.43, this.width * 0.75, this.height * 0.45, this.width, this.height * 0.39);
-        this.ctx.lineTo(this.width, this.height);
-        this.ctx.lineTo(0, this.height);
+        this.ctx.moveTo(0, this.baseHeight * 0.38);
+        this.ctx.bezierCurveTo(this.baseWidth * 0.25, this.baseHeight * 0.43, this.baseWidth * 0.75, this.baseHeight * 0.45, this.baseWidth, this.baseHeight * 0.39);
+        this.ctx.lineTo(this.baseWidth, this.baseHeight);
+        this.ctx.lineTo(0, this.baseHeight);
         this.ctx.closePath();
         this.ctx.fillStyle = "#fff";
         this.ctx.shadowColor = "#b8e3fd";
@@ -957,8 +996,8 @@ class SouthParkShooterGame {
         // Snowfall
         for (let i = 0; i < 50; i++) {
             this.ctx.beginPath();
-            let sx = (i * 77) % this.width + ((i * 13) % 8) - 4;
-            let sy = ((i * 91) % this.height + ((i * 17) % 23) + Math.sin(performance.now()/300 + i) * 20) % this.height;
+            let sx = (i * 77) % this.baseWidth + ((i * 13) % 8) - 4;
+            let sy = ((i * 91) % this.baseHeight + ((i * 17) % 23) + Math.sin(performance.now()/300 + i) * 20) % this.baseHeight;
             let radius = (i % 3 === 0) ? 1.8 : 1.1;
             this.ctx.globalAlpha = 0.6 + 0.3 * Math.sin(performance.now()/800 + i);
             this.ctx.arc(sx, sy, radius, 0, Math.PI * 2);
